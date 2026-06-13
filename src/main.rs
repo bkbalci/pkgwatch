@@ -424,7 +424,7 @@ async fn run_paru_wrapper(
         return Err(anyhow!("missing paru arguments after `pkgwatch paru --`"));
     }
 
-    if runtime.wrapper_enabled {
+    if runtime.wrapper_enabled && !cli::requests_repo_only(&args) {
         let packages = cli::extract_package_args(&args);
         if !packages.is_empty() {
             let exit_code = scan_package_targets(packages, cli, runtime, paths).await?;
@@ -455,6 +455,10 @@ fn finish_report(report: &Report, cli: &Cli, runtime: &RuntimeConfig) -> Result<
         output::print_json(report)?;
     } else {
         output::print_human(report)?;
+        if report.severity >= Severity::High {
+            let path = output::write_report_draft(report)?;
+            eprintln!("Report draft written to {}", path.display());
+        }
     }
 
     if should_block(report, cli, runtime)? {

@@ -141,11 +141,16 @@ pub fn requests_system_upgrade(args: &[String]) -> bool {
     saw_sync && saw_upgrade
 }
 
+pub fn requests_repo_only(args: &[String]) -> bool {
+    args.iter()
+        .any(|arg| arg == "--repo" || arg == "--repo-only")
+}
+
 #[cfg(test)]
 mod tests {
     use clap::Parser;
 
-    use super::{extract_package_args, requests_system_upgrade, Cli, Commands};
+    use super::{extract_package_args, requests_repo_only, requests_system_upgrade, Cli, Commands};
 
     #[test]
     fn extracts_non_flag_paru_arguments() {
@@ -176,5 +181,19 @@ mod tests {
             Some(Commands::Paru { args }) => assert_eq!(args, vec!["-Syu"]),
             other => panic!("expected paru command, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn detects_repo_only_requests() {
+        assert!(requests_repo_only(&[
+            "-S".to_owned(),
+            "--repo".to_owned(),
+            "curl".to_owned()
+        ]));
+        assert!(!requests_repo_only(&[
+            "-S".to_owned(),
+            "--aur".to_owned(),
+            "example-bin".to_owned()
+        ]));
     }
 }

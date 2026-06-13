@@ -4,6 +4,66 @@
 
 `pkgwatch` is a guardrail, not a verifier. It never executes package scripts during scans, but users should still review PKGBUILDs and prefer clean build environments for high-risk packages.
 
+## Install
+
+Install from GitHub:
+
+```sh
+cargo install --git https://github.com/bkbalci/pkgwatch
+```
+
+Or build from a local checkout:
+
+```sh
+cargo build --release
+mkdir -p ~/.local/bin
+cp target/release/pkgwatch ~/.local/bin/pkgwatch
+```
+
+Make sure the install location is in `PATH`:
+
+```sh
+command -v pkgwatch
+```
+
+## Quick Start
+
+Create the config and print the shell wrapper:
+
+```sh
+pkgwatch init
+```
+
+Add the printed function to your shell rc file, for example `~/.zshrc`:
+
+```sh
+paru() {
+  pkgwatch paru -- "$@"
+}
+```
+
+Reload your shell and verify that `paru` is wrapped:
+
+```sh
+source ~/.zshrc
+type paru
+```
+
+Run a non-installing AUR update scan:
+
+```sh
+pkgwatch update-check
+```
+
+Then use `paru` normally:
+
+```sh
+paru -Syu
+paru -S package-name
+```
+
+Without the shell wrapper, normal `paru` commands do not automatically run `pkgwatch`.
+
 ## Commands
 
 ```sh
@@ -78,7 +138,26 @@ real_paru_path = "/usr/bin/paru"
 
 AI review is opt-in. When enabled, `pkgwatch` looks for `codex`, `claude`, or `gemini` in `PATH`, or runs `custom_command` when `provider = "custom"`. It sends only package script text for advisory review. AI output does not execute package code and is not treated as a blocking signal by itself unless `fail_closed = true` and the AI review cannot complete.
 
+Enable AI for one command:
+
+```sh
+pkgwatch --ai --ai-threshold always update-check
+```
+
+Enable AI by default in `~/.config/pkgwatch/config.toml`:
+
+```toml
+[ai]
+enabled = true
+provider = "auto"
+threshold = "medium"
+```
+
 Remote AUR scans download the package snapshot and inspect `PKGBUILD`, `.install`, `.SRCINFO`, and helper shell scripts before build. `pkgwatch paru -- ...` also expands AUR dependency closure up to `max_aur_packages`.
+
+`pkgwatch paru -- ...` skips AUR scanning for repo-only operations such as `paru --repo ...`.
+
+For high or critical findings, human output writes a report draft under `/tmp/pkgwatch-report-<package>.txt`. It is never sent automatically.
 
 Exit codes:
 
@@ -86,6 +165,26 @@ Exit codes:
 - `1`: scan completed with warnings in strict mode
 - `2`: critical finding blocked or user declined
 - `3`: usage/config error
+
+## Uninstall
+
+Remove the shell wrapper function from your shell rc file, then remove the binary:
+
+```sh
+rm -f ~/.local/bin/pkgwatch
+```
+
+If installed with Cargo:
+
+```sh
+cargo uninstall pkgwatch
+```
+
+Optional config/cache cleanup:
+
+```sh
+rm -rf ~/.config/pkgwatch ~/.cache/pkgwatch
+```
 
 ## Verification
 
