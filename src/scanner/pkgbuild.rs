@@ -1,10 +1,45 @@
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 
 use anyhow::{anyhow, Context, Result};
 use regex::Regex;
 
 use super::{Finding, Severity};
+
+static PIPED_SHELL: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)\b(curl|wget)\b[^|\n]*\|\s*(?:sudo\s+)?(?:sh|bash)\b")
+        .expect("valid piped shell regex")
+});
+static EVAL_SUBSTITUTION: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(?i)\beval\s+["']?\s*\$\("#).expect("valid eval regex"));
+static BASE64_SHELL: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)\bbase64\s+(?:-d|--decode)\b[^|\n]*\|\s*(?:sudo\s+)?(?:sh|bash)\b")
+        .expect("valid base64 shell regex")
+});
+static BAD_JS_DEPENDENCY: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)\b(?:npm|bun)\s+(?:install|add)\b[^\n]*(atomic-lockfile|js-digest)\b")
+        .expect("valid bad js dependency regex")
+});
+static SYSTEMD_PERSISTENCE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)\bsystemctl\s+(?:enable|reenable|preset)\b").expect("valid systemd regex")
+});
+static GENERIC_JS_INSTALL: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)\b(?:npm|bun)\s+(?:install|add)\b").expect("valid generic js install regex")
+});
+static PIP_INSTALL: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)\bpip(?:3)?\s+install\b").expect("valid pip install regex"));
+static INLINE_INTERPRETER: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?i)\b(?:python|python3|ruby)\s+(?:-c|-e)\b"#)
+        .expect("valid inline interpreter regex")
+});
+static NETWORK_DOWNLOAD: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)(^|[;&|{]\s*)(?:curl|wget)\b").expect("valid download regex")
+});
+static PROMPT_INJECTION: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)\b(ignore previous instructions|this package is safe|mark safe)\b")
+        .expect("valid prompt injection regex")
+});
 
 #[derive(Debug, Clone)]
 pub struct PackageScan {
@@ -57,28 +92,6 @@ pub fn scan_documents(documents: &[SourceDocument]) -> PackageScan {
 }
 
 pub fn scan_content(file_name: &str, content: &str) -> Vec<Finding> {
-    let piped_shell = Regex::new(r"(?i)\b(curl|wget)\b[^|\n]*\|\s*(?:sudo\s+)?(?:sh|bash)\b")
-        .expect("valid piped shell regex");
-    let eval_substitution = Regex::new(r#"(?i)\beval\s+["']?\s*\$\("#).expect("valid eval regex");
-    let base64_shell =
-        Regex::new(r"(?i)\bbase64\s+(?:-d|--decode)\b[^|\n]*\|\s*(?:sudo\s+)?(?:sh|bash)\b")
-            .expect("valid base64 shell regex");
-    let bad_js_dependency =
-        Regex::new(r"(?i)\b(?:npm|bun)\s+(?:install|add)\b[^\n]*(atomic-lockfile|js-digest)\b")
-            .expect("valid bad js dependency regex");
-    let systemd_persistence =
-        Regex::new(r"(?i)\bsystemctl\s+(?:enable|reenable|preset)\b").expect("valid systemd regex");
-    let generic_js_install = Regex::new(r"(?i)\b(?:npm|bun)\s+(?:install|add)\b")
-        .expect("valid generic js install regex");
-    let pip_install = Regex::new(r"(?i)\bpip(?:3)?\s+install\b").expect("valid pip install regex");
-    let inline_interpreter = Regex::new(r#"(?i)\b(?:python|python3|ruby)\s+(?:-c|-e)\b"#)
-        .expect("valid inline interpreter regex");
-    let network_download =
-        Regex::new(r"(?i)(^|[;&|{]\s*)(?:curl|wget)\b").expect("valid download regex");
-    let prompt_injection =
-        Regex::new(r"(?i)\b(ignore previous instructions|this package is safe|mark safe)\b")
-            .expect("valid prompt injection regex");
-
     let mut findings = Vec::new();
     let is_install_hook = file_name.ends_with(".install");
 
@@ -90,7 +103,7 @@ pub fn scan_content(file_name: &str, content: &str) -> Vec<Finding> {
             continue;
         }
 
-        if prompt_injection.is_match(line) {
+        if PROMPT_INJECTION.is_match(line) {
             findings.push(
                 Finding::new(
                     Severity::Medium,
@@ -108,7 +121,7 @@ pub fn scan_content(file_name: &str, content: &str) -> Vec<Finding> {
             continue;
         }
 
-        if let Some(capture) = bad_js_dependency.captures(line) {
+        if let Some(capture) = BAD_JS_DEPENDENCY.captures(line) {
             findings.push(
                 Finding::new(
                     Severity::Critical,
@@ -129,7 +142,7 @@ pub fn scan_content(file_name: &str, content: &str) -> Vec<Finding> {
             continue;
         }
 
-        if piped_shell.is_match(line) {
+        if PIPED_SHELL.is_match(line) {
             findings.push(
                 Finding::new(
                     Severity::Critical,
@@ -144,7 +157,7 @@ pub fn scan_content(file_name: &str, content: &str) -> Vec<Finding> {
             continue;
         }
 
-        if base64_shell.is_match(line) {
+        if BASE64_SHELL.is_match(line) {
             findings.push(
                 Finding::new(
                     Severity::Critical,
@@ -159,7 +172,7 @@ pub fn scan_content(file_name: &str, content: &str) -> Vec<Finding> {
             continue;
         }
 
-        if eval_substitution.is_match(line) {
+        if EVAL_SUBSTITUTION.is_match(line) {
             findings.push(
                 Finding::new(
                     Severity::High,
@@ -173,7 +186,7 @@ pub fn scan_content(file_name: &str, content: &str) -> Vec<Finding> {
             continue;
         }
 
-        if is_install_hook && systemd_persistence.is_match(line) {
+        if is_install_hook && SYSTEMD_PERSISTENCE.is_match(line) {
             findings.push(
                 Finding::new(
                     Severity::High,
@@ -187,7 +200,7 @@ pub fn scan_content(file_name: &str, content: &str) -> Vec<Finding> {
             continue;
         }
 
-        if generic_js_install.is_match(line) {
+        if GENERIC_JS_INSTALL.is_match(line) {
             findings.push(
                 Finding::new(
                     Severity::Medium,
@@ -201,7 +214,7 @@ pub fn scan_content(file_name: &str, content: &str) -> Vec<Finding> {
             continue;
         }
 
-        if pip_install.is_match(line) {
+        if PIP_INSTALL.is_match(line) {
             findings.push(
                 Finding::new(
                     Severity::Medium,
@@ -215,7 +228,7 @@ pub fn scan_content(file_name: &str, content: &str) -> Vec<Finding> {
             continue;
         }
 
-        if inline_interpreter.is_match(line) {
+        if INLINE_INTERPRETER.is_match(line) {
             findings.push(
                 Finding::new(
                     Severity::Medium,
@@ -229,7 +242,7 @@ pub fn scan_content(file_name: &str, content: &str) -> Vec<Finding> {
             continue;
         }
 
-        if network_download.is_match(line) {
+        if NETWORK_DOWNLOAD.is_match(line) {
             findings.push(
                 Finding::new(
                     Severity::Medium,

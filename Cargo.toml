@@ -7,7 +7,7 @@ description = "AUR PKGBUILD risk scanner and paru wrapper"
 readme = "README.md"
 repository = "https://github.com/bkbalci/pkgwatch"
 homepage = "https://github.com/bkbalci/pkgwatch"
-keywords = ["archlinux", "aur", "security", "pkgbuild", "cli"]
+keywords = ["archlinux", "aur", "security", "pkgbuild", "supply-chain"]
 categories = ["command-line-utilities", "development-tools"]
 
 [dependencies]

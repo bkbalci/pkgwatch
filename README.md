@@ -4,6 +4,12 @@
 
 `pkgwatch` is a guardrail, not a verifier. It never executes package scripts during scans, but users should still review PKGBUILDs and prefer clean build environments for high-risk packages.
 
+## Why
+
+The June 2026 AUR malicious package incident was a reminder that build scripts run before `pacman` ever sees a package. A pacman hook is too late for this class of problem: the risky code can execute during `makepkg` as the user.
+
+`pkgwatch` sits earlier in the flow. It downloads and reads package scripts as text, flags suspicious patterns, and can wrap `paru` so review happens before the build starts.
+
 ## Install
 
 Install the latest tagged release from source:
@@ -51,12 +57,22 @@ Create the config and print the shell wrapper:
 pkgwatch init
 ```
 
-Add the printed function to your shell rc file, for example `~/.zshrc`:
+Add the printed function to your shell rc file.
+
+For bash or zsh:
 
 ```sh
 paru() {
   pkgwatch paru -- "$@"
 }
+```
+
+For fish:
+
+```fish
+function paru
+    pkgwatch paru -- $argv
+end
 ```
 
 Reload your shell and verify that `paru` is wrapped:

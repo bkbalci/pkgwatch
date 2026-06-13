@@ -559,11 +559,17 @@ fn print_init_instructions(paths: &config::AppPaths, config: &config::AppConfig)
     println!("pkgwatch config: {}", paths.config_file.display());
     println!("real paru: {}", config.wrapper.real_paru_path);
     println!();
-    println!("Add this shell function to your shell rc file to guard normal paru usage:");
+    println!("Add one of these shell functions to your shell rc file to guard normal paru usage:");
     println!();
+    println!("bash/zsh:");
     println!("paru() {{");
     println!("  pkgwatch paru -- \"$@\"");
     println!("}}");
+    println!();
+    println!("fish:");
+    println!("function paru");
+    println!("    pkgwatch paru -- $argv");
+    println!("end");
     println!();
     println!(
         "AI review is {} by default.",
