@@ -12,10 +12,16 @@ The June 2026 AUR malicious package incident was a reminder that build scripts r
 
 ## Install
 
+Install from crates.io:
+
+```sh
+cargo install pkgwatch
+```
+
 Install the latest tagged release from source:
 
 ```sh
-cargo install --git https://github.com/bkbalci/pkgwatch --tag v0.1.0
+cargo install --git https://github.com/bkbalci/pkgwatch --tag v0.1.1
 ```
 
 Install the current development version from `main`:
@@ -27,12 +33,12 @@ cargo install --git https://github.com/bkbalci/pkgwatch
 Or download the Linux x86_64 binary from the GitHub release:
 
 ```sh
-curl -L -o pkgwatch.tar.gz https://github.com/bkbalci/pkgwatch/releases/download/v0.1.0/pkgwatch-v0.1.0-x86_64-unknown-linux-gnu.tar.gz
-curl -L -o pkgwatch.tar.gz.sha256 https://github.com/bkbalci/pkgwatch/releases/download/v0.1.0/pkgwatch-v0.1.0-x86_64-unknown-linux-gnu.tar.gz.sha256
+curl -L -o pkgwatch.tar.gz https://github.com/bkbalci/pkgwatch/releases/download/v0.1.1/pkgwatch-v0.1.1-x86_64-unknown-linux-gnu.tar.gz
+curl -L -o pkgwatch.tar.gz.sha256 https://github.com/bkbalci/pkgwatch/releases/download/v0.1.1/pkgwatch-v0.1.1-x86_64-unknown-linux-gnu.tar.gz.sha256
 sha256sum -c pkgwatch.tar.gz.sha256
 tar -xzf pkgwatch.tar.gz
 mkdir -p ~/.local/bin
-cp pkgwatch-v0.1.0-x86_64-unknown-linux-gnu/pkgwatch ~/.local/bin/pkgwatch
+cp pkgwatch-v0.1.1-x86_64-unknown-linux-gnu/pkgwatch ~/.local/bin/pkgwatch
 ```
 
 Or build from a local checkout:
