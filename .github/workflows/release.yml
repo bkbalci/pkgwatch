@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  linux-x86_64:
+    name: Linux x86_64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Test
+        run: cargo test --locked
+
+      - name: Build release binary
+        run: cargo build --release --locked
+
+      - name: Package binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          name="pkgwatch-${GITHUB_REF_NAME}-x86_64-unknown-linux-gnu"
+          mkdir -p "dist/${name}"
+          cp target/release/pkgwatch "dist/${name}/pkgwatch"
+          cp README.md LICENSE "dist/${name}/"
+          tar -C dist -czf "${name}.tar.gz" "${name}"
+          sha256sum "${name}.tar.gz" > "${name}.tar.gz.sha256"
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            pkgwatch-${{ github.ref_name }}-x86_64-unknown-linux-gnu.tar.gz
+            pkgwatch-${{ github.ref_name }}-x86_64-unknown-linux-gnu.tar.gz.sha256
+

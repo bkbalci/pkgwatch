@@ -28,6 +28,11 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
+Pushing the tag runs the release workflow and uploads:
+
+- `pkgwatch-v0.1.0-x86_64-unknown-linux-gnu.tar.gz`
+- `pkgwatch-v0.1.0-x86_64-unknown-linux-gnu.tar.gz.sha256`
+
 ## GitHub Release Notes
 
 Use:
@@ -40,11 +45,12 @@ Initial MVP release.
 - AUR metadata and dependency closure checks.
 - Optional advisory AI review through codex, claude, gemini, or custom command.
 - JSON and human-readable reports.
+- Linux x86_64 binary artifact and SHA256 checksum.
 ```
 
 ## After Release
 
-- Verify `cargo install --git https://github.com/bkbalci/pkgwatch` works.
+- Verify `cargo install --git https://github.com/bkbalci/pkgwatch --tag v0.1.0` works.
+- Verify the release asset checksum and binary run.
 - Consider adding an AUR package for `pkgwatch`.
 - Watch issues for wrapper false positives and AI provider command compatibility.
-
