@@ -4,12 +4,19 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build and upload assets for"
+        required: true
+        default: "v0.1.0"
 
 permissions:
   contents: write
 
 env:
   CARGO_TERM_COLOR: always
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
 jobs:
   linux-x86_64:
@@ -18,6 +25,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -35,7 +44,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          name="pkgwatch-${GITHUB_REF_NAME}-x86_64-unknown-linux-gnu"
+          name="pkgwatch-${RELEASE_TAG}-x86_64-unknown-linux-gnu"
           mkdir -p "dist/${name}"
           cp target/release/pkgwatch "dist/${name}/pkgwatch"
           cp README.md LICENSE "dist/${name}/"
@@ -45,7 +54,7 @@ jobs:
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
           files: |
-            pkgwatch-${{ github.ref_name }}-x86_64-unknown-linux-gnu.tar.gz
-            pkgwatch-${{ github.ref_name }}-x86_64-unknown-linux-gnu.tar.gz.sha256
-
+            pkgwatch-${{ env.RELEASE_TAG }}-x86_64-unknown-linux-gnu.tar.gz
+            pkgwatch-${{ env.RELEASE_TAG }}-x86_64-unknown-linux-gnu.tar.gz.sha256
