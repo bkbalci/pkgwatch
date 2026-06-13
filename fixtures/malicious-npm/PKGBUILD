@@ -1,0 +1,11 @@
+pkgname=malicious-npm-example
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Example containing a known malicious JavaScript dependency"
+arch=('any')
+license=('MIT')
+
+build() {
+  npm install atomic-lockfile
+}
+

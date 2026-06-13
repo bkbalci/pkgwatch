@@ -1,0 +1,18 @@
+pkgname=clean-example
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Clean example package"
+arch=('x86_64')
+url="https://example.test/clean-example"
+license=('MIT')
+source=("https://example.test/clean-example-${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  make
+}
+
+package() {
+  make DESTDIR="$pkgdir" install
+}
+
